@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": ["string", "null"] },
+        "photoURL": { "type": ["string", "null"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "createdAt"]
+    },
+    "Session": {
+      "title": "Counseling Session",
+      "description": "A single counseling session started by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "mood": { "type": "string" },
+        "category": { "type": "string", "enum": ["Interpersonal", "Overwork", "Career", "Personal", "Health", "Other"] },
+        "status": { "type": "string", "enum": ["active", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mood", "status", "createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "A message within a counseling session",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["role", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Store user profiles"
+    },
+    "sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Counseling session metadata"
+    },
+    "sessions/{sessionId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages belonging to a specific session"
+    }
+  }
+}

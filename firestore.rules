@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['displayName', 'email', 'photoURL', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             (data.email == null || (data.email is string && data.email.size() <= 100)) &&
+             (data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             data.createdAt == request.time;
+    }
+
+    function isValidSessionShape(data) {
+      return data.keys().hasAll(['userId', 'mood', 'status', 'createdAt', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.mood is string && data.mood.size() <= 32 &&
+             data.status in ['active', 'completed'] &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 50)) &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['role', 'content', 'createdAt']) &&
+             data.role in ['user', 'assistant'] &&
+             data.content is string && data.content.size() <= 4096 &&
+             data.createdAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && 
+                      incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']) &&
+                      incoming().displayName is string && incoming().displayName.size() <= 100 &&
+                      (incoming().photoURL == null || (incoming().photoURL is string && incoming().photoURL.size() <= 500));
+    }
+
+    match /sessions/{sessionId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(sessionId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(sessionId) && 
+                      isValidSessionShape(incoming()) && 
+                      incoming().createdAt == request.time;
+      allow update: if isOwner(existing().userId) && isValidId(sessionId) && 
+                      isValidSessionShape(incoming()) && 
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().userId == existing().userId &&
+                      incoming().mood == existing().mood &&
+                      (
+                        incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'category']) &&
+                        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'category'])
+                      );
+      
+      match /messages/{messageId} {
+        allow list: if isSignedIn() && isOwner(get(/databases/$(database)/documents/sessions/$(sessionId)).data.userId);
+        allow get: if isSignedIn() && isOwner(get(/databases/$(database)/documents/sessions/$(sessionId)).data.userId) && isValidId(messageId);
+        allow create: if isSignedIn() && isOwner(get(/databases/$(database)/documents/sessions/$(sessionId)).data.userId) && isValidMessage(incoming()) && isValidId(messageId);
+      }
+    }
+  }
+}

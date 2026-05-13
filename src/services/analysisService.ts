@@ -1,7 +1,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Message, StressCategory } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey: apiKey || "" });
+  }
+  return aiInstance;
+}
 
 const CLASSIFICATION_INSTRUCTION = `
 당신은 상담 내용을 분석하여 주요 스트레스 원인을 분류하는 전문가입니다. 
@@ -21,6 +32,7 @@ const CLASSIFICATION_INSTRUCTION = `
 
 export async function classifyStressRoot(messages: Message[]): Promise<StressCategory> {
   try {
+    const ai = getAI();
     const conversation = messages.map(m => `${m.role}: ${m.content}`).join('\n');
     
     const response = await ai.models.generateContent({

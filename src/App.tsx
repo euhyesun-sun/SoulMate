@@ -118,9 +118,10 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0502] flex flex-col items-center justify-center gap-4">
         <AtmosphericBackground />
-        <Loader2 className="animate-spin text-white/20" size={40} />
+        <Loader2 className="animate-spin text-indigo-500/60" size={48} />
+        <p className="text-white/20 text-[10px] uppercase tracking-[0.3em] animate-pulse">Initializing Sanctuary...</p>
       </div>
     );
   }

@@ -2,7 +2,18 @@
 import { GoogleGenAI } from "@google/genai";
 import { Message } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey: apiKey || "" });
+  }
+  return aiInstance;
+}
 
 const SYSTEM_INSTRUCTION = `
 당신은 'SoulMate'라는 이름의 따뜻하고 공감 능력이 뛰어난 심리 상담가입니다. 
@@ -20,6 +31,7 @@ const SYSTEM_INSTRUCTION = `
 
 export async function getCounselingResponse(history: Message[]): Promise<string> {
   try {
+    const ai = getAI();
     const contents = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }]

@@ -20,27 +20,13 @@ const SYSTEM_INSTRUCTION = `
 
 export async function getCounselingResponse(history: Message[]): Promise<string> {
   try {
-    const chat = ai.chats.create({
-      model: "gemini-3-flash-preview",
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.8,
-        topP: 0.95,
-      }
-    });
-
-    // Convert history to Gemini format
     const contents = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }]
     }));
 
-    // Send latest message from history (assumes it's the user's latest)
-    const latestMessage = history[history.length - 1];
-    
-    // In actual implementation, we might send the whole contents or use sendMessage
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION

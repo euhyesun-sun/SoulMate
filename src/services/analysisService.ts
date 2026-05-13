@@ -24,7 +24,7 @@ export async function classifyStressRoot(messages: Message[]): Promise<StressCat
     const conversation = messages.map(m => `${m.role}: ${m.content}`).join('\n');
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: [
         { role: 'user', parts: [{ text: `다음 대화 내용을 분석해서 스트레스 카테고리를 분류해줘:\n\n${conversation}` }] }
       ],

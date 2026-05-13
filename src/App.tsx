@@ -9,7 +9,7 @@ import { getCounselingResponse } from './services/geminiService';
 import { classifyStressRoot } from './services/analysisService';
 import { Heart, Moon, LogIn, LogOut, User as UserIcon, Loader2, PieChart } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
-import { createSession, addMessage, getUserSessions, updateSessionCategory, completeSession } from './services/firestoreService';
+import { createSession, addMessage, getUserSessions, finalizeSession } from './services/firestoreService';
 
 export default function App() {
   const { user, loading: authLoading, error: authError } = useAuth();
@@ -17,6 +17,7 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [userSessions, setUserSessions] = useState<Session[]>([]);
 
@@ -56,13 +57,15 @@ export default function App() {
 
   const performAnalysis = async (sid: string, msgs: Message[]) => {
     if (!user || msgs.length < 3) return; 
+    setIsAnalyzing(true);
     try {
       const category = await classifyStressRoot(msgs);
-      await updateSessionCategory(sid, category);
-      await completeSession(sid);
+      await finalizeSession(sid, category);
       console.log("Analysis completed:", category);
     } catch (error) {
       console.error("Analysis failed:", error);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -220,9 +223,15 @@ export default function App() {
                 </div>
                 <button 
                   onClick={resetMood}
-                  className="text-[10px] uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors"
+                  disabled={isAnalyzing}
+                  className="px-4 py-2 rounded-full glass border border-white/10 text-[10px] uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  상담 마치기 및 분석
+                  {isAnalyzing ? (
+                    <Loader2 size={12} className="animate-spin text-indigo-400" />
+                  ) : (
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                  )}
+                  {isAnalyzing ? "분석 중..." : "상담 마치기 및 분석"}
                 </button>
               </div>
               <ChatInterface 

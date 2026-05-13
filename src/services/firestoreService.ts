@@ -138,25 +138,12 @@ export async function getUserSessions(): Promise<Session[]> {
   }
 }
 
-export async function updateSessionCategory(sessionId: string, category: StressCategory) {
+export async function finalizeSession(sessionId: string, category: StressCategory) {
   const path = `sessions/${sessionId}`;
   try {
     const sessionRef = doc(db, 'sessions', sessionId);
     await setDoc(sessionRef, {
       category,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
-    throw error;
-  }
-}
-
-export async function completeSession(sessionId: string) {
-  const path = `sessions/${sessionId}`;
-  try {
-    const sessionRef = doc(db, 'sessions', sessionId);
-    await setDoc(sessionRef, {
       status: 'completed',
       updatedAt: serverTimestamp()
     }, { merge: true });
